@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 // How Many Tabs Do You Have Open? — one number, digits only.
 //
@@ -18,5 +18,17 @@ if (!/^[0-9]{1,5}$/.test(count)) {
   throw new Error(`count must be 1–5 digits, got ${JSON.stringify(count)}`);
 }
 
+// A count with leading zeros ("047") would read as a different number
+// than intended, so reject it; the count itself must be the plain number.
+if (count.length > 1 && count.startsWith("0")) {
+  throw new Error(`count must not have leading zeros, got ${JSON.stringify(count)}`);
+}
+
 mkdirSync("/output", { recursive: true });
 writeFileSync("/output/entry.txt", count, "utf8");
+
+// Verify the write round-trips: a silent encoding or partial-write
+// failure would otherwise submit a corrupted entry.
+if (readFileSync("/output/entry.txt", "utf8") !== count) {
+  throw new Error("entry.txt does not match the count after writing");
+}
